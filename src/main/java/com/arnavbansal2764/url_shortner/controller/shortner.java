@@ -1,0 +1,54 @@
+package com.arnavbansal2764.url_shortner.controller;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.arnavbansal2764.url_shortner.dto.ShortenerRequest;
+import com.arnavbansal2764.url_shortner.dto.ShortenerResponse;
+import com.arnavbansal2764.url_shortner.service.ShortenerService;
+import jakarta.validation.Valid;
+
+/**
+ * REST Controller for URL shortener operations.
+ * Handles requests to shorten URLs and retrieve shortened URLs.
+ */
+@RestController
+@RequestMapping("/shortner")
+public class shortner {
+    
+    private final ShortenerService shortenerService;
+    
+    /**
+     * Constructor injection of ShortenerService.
+     * Follows Spring Boot best practices for dependency injection.
+     */
+    public shortner(ShortenerService shortenerService) {
+        this.shortenerService = shortenerService;
+    }
+    
+    @GetMapping()
+    public String getMethodName() {
+        return "Welcome to shortner send a post request to shorten your url";
+    }
+    
+    /**
+     * Creates a shortened URL from the provided long URL.
+     * Returns 201 Created status on success with the short code and metadata.
+     * Returns 400 Bad Request if validation fails.
+     *
+     * @param request the ShortenerRequest containing the URL to shorten
+     * @return ResponseEntity with ShortenerResponse containing the short code and timestamps
+     */
+    @PostMapping()
+    public ResponseEntity<ShortenerResponse> postMethodName(@Valid @RequestBody ShortenerRequest request) {
+        // URL has been validated by @Valid - starts with http or https
+        ShortenerResponse response = shortenerService.shortenUrl(request.getUrl());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+}
