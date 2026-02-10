@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.arnavbansal2764.url_shortner.dto.ShortenerResponse;
+import com.arnavbansal2764.url_shortner.entity.ShortenedUrl;
+import com.arnavbansal2764.url_shortner.repository.ShortenedUrlRepository;
 
 import java.time.Instant;
 import java.security.MessageDigest;
@@ -14,7 +16,7 @@ import java.util.Random;
 
 /**
  * Service for URL shortening operations.
- * Generates unique short codes for URLs and manages URL shortening logic.
+ * Generates unique short codes for URLs, saves them to the database, and manages URL shortening logic.
  */
 @Service
 public class ShortenerService {
@@ -24,13 +26,23 @@ public class ShortenerService {
     private static final String CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final int SHORT_CODE_LENGTH = 6;
     
+    private final ShortenedUrlRepository shortenedUrlRepository;
+    
     /**
-     * Generates a short code for the given URL.
+     * Constructor injection of ShortenedUrlRepository.
+     * Follows Spring Boot best practices for dependency injection.
+     */
+    public ShortenerService(ShortenedUrlRepository shortenedUrlRepository) {
+        this.shortenedUrlRepository = shortenedUrlRepository;
+    }
+    
+    /**
+     * Generates a short code for the given URL, saves it to the database, and returns the response.
      * Uses a hash of the URL (without protocol) combined with random characters
      * to create a unique, randomly-generated short code.
      *
      * @param url the original URL to shorten
-     * @return ShortenerResponse containing the original URL, short code, and timestamps
+     * @return ShortenerResponse containing the original URL, short code, ID, and timestamps
      */
     public ShortenerResponse shortenUrl(String url) {
         try {
@@ -46,9 +58,13 @@ public class ShortenerService {
             // Create timestamps
             Instant now = Instant.now();
             
-            logger.info("Generated short code '{}' for URL '{}'", shortCode, url);
+            // Create and save the entity to the database
+            ShortenedUrl shortenedUrl = new ShortenedUrl(url, shortCode, now, now);
+            ShortenedUrl savedUrl = shortenedUrlRepository.save(shortenedUrl);
             
-            return new ShortenerResponse(url, shortCode, now, now);
+            logger.info("Generated short code '{}' with ID '{}' for URL '{}'", shortCode, savedUrl.getId(), url);
+            
+            return new ShortenerResponse(savedUrl.getId(), savedUrl.getUrl(), savedUrl.getShortCode(), savedUrl.getCreatedAt(), savedUrl.getUpdatedAt());
         } catch (NoSuchAlgorithmException e) {
             logger.error("Error generating short code for URL: {}", url, e);
             throw new RuntimeException("Failed to generate short code", e);
@@ -57,7 +73,7 @@ public class ShortenerService {
     
     /**
      * Generates a hash base from the URL using SHA-256.
-     * Takes the first 6 characters of the Base64-encoded hash.
+     * Takes the first 4 characters of the Base64-encoded hash.
      *
      * @param input the URL string to hash
      * @return a hash-based string used as the foundation for the short code

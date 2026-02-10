@@ -1,21 +1,33 @@
-package com.arnavbansal2764.url_shortner.dto;
+package com.arnavbansal2764.url_shortner.entity;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * DTO for URL shortener response.
- * Contains the original URL, generated short code, ID, and timestamps.
+ * Entity representing a shortened URL.
+ * Stores the original URL and its corresponding short code in the database.
  */
-public class ShortenerResponse {
+@Entity
+@Table(name = "shortened_urls")
+public class ShortenedUrl {
     
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
     private String url;
     private String shortCode;
     private Instant createdAt;
     private Instant updatedAt;
 
-    public ShortenerResponse(Long id, String url, String shortCode, Instant createdAt, Instant updatedAt) {
-        this.id = id;
+    public ShortenedUrl() {
+    }
+
+    public ShortenedUrl(String url, String shortCode, Instant createdAt, Instant updatedAt) {
         this.url = url;
         this.shortCode = shortCode;
         this.createdAt = createdAt;
