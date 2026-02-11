@@ -9,52 +9,41 @@ import com.arnavbansal2764.url_shortner.entity.ShortenedUrl;
 import com.arnavbansal2764.url_shortner.repository.ShortenedUrlRepository;
 
 import java.time.Instant;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Optional;
-import java.util.Random;
 
 /**
- * Service for URL shortening operations.
- * Generates unique short codes for URLs, saves them to the database, and manages URL shortening logic.
+ * Service for managing URL shortening operations.
+ * Handles creation, retrieval, and updates of shortened URLs.
+ * Delegates short code generation to ShortCodeGeneratorService.
  */
 @Service
 public class ShortenerService {
     
     private static final Logger logger = LoggerFactory.getLogger(ShortenerService.class);
-    private static final Random random = new Random();
-    private static final String CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final int SHORT_CODE_LENGTH = 6;
     
     private final ShortenedUrlRepository shortenedUrlRepository;
+    private final ShortCodeGeneratorService shortCodeGeneratorService;
     
     /**
-     * Constructor injection of ShortenedUrlRepository.
+     * Constructor injection of dependencies.
      * Follows Spring Boot best practices for dependency injection.
      */
-    public ShortenerService(ShortenedUrlRepository shortenedUrlRepository) {
+    public ShortenerService(ShortenedUrlRepository shortenedUrlRepository, ShortCodeGeneratorService shortCodeGeneratorService) {
         this.shortenedUrlRepository = shortenedUrlRepository;
+        this.shortCodeGeneratorService = shortCodeGeneratorService;
     }
     
     /**
      * Generates a short code for the given URL, saves it to the database, and returns the response.
-     * Uses a hash of the URL (without protocol) combined with random characters
-     * to create a unique, randomly-generated short code.
      *
      * @param url the original URL to shorten
      * @return ShortenerResponse containing the original URL, short code, ID, and timestamps
      */
     public ShortenerResponse shortenUrl(String url) {
         try {
-            // Remove http:// or https:// from URL for hashing
-            String urlWithoutProtocol = url.replaceAll("^https?://", "");
-            
-            // Generate hash of the URL
-            String hashBase = generateHashBase(urlWithoutProtocol);
-            
-            // Combine hash with random characters to ensure uniqueness
-            String shortCode = generateShortCode(hashBase);
+            // Generate short code using the generator service
+            String shortCode = shortCodeGeneratorService.generateShortCode(url);
             
             // Create timestamps
             Instant now = Instant.now();
@@ -97,38 +86,28 @@ public class ShortenerService {
     }
     
     /**
-     * Generates a hash base from the URL using SHA-256.
-     * Takes the first 4 characters of the Base64-encoded hash.
-     *
-     * @param input the URL string to hash
-     * @return a hash-based string used as the foundation for the short code
-     * @throws NoSuchAlgorithmException if SHA-256 algorithm is not available
+     * Updates the URL for an existing short code.
+     * Finds the shortened URL by short code and updates its original URL.
+     * The updatedAt timestamp is automatically updated.
+     * 
+     * @param shortCode the short code of the URL to update
+     * @param newUrl the new original URL
+     * @return Optional containing the updated ShortenerResponse if found, empty otherwise
      */
-    private String generateHashBase(String input) throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hashBytes = digest.digest(input.getBytes());
-        String base64Hash = Base64.getUrlEncoder().withoutPadding().encodeToString(hashBytes);
-        
-        // Take first 4 characters of the hash
-        return base64Hash.substring(0, Math.min(4, base64Hash.length()));
-    }
-    
-    /**
-     * Generates a random short code of fixed length.
-     * Combines hash-based characters with random characters for uniqueness and randomness.
-     *
-     * @param hashBase the hash-based prefix for the short code
-     * @return a unique random short code
-     */
-    private String generateShortCode(String hashBase) {
-        StringBuilder shortCode = new StringBuilder(hashBase);
-        
-        // Add random characters to reach desired length
-        int remainingLength = SHORT_CODE_LENGTH - shortCode.length();
-        for (int i = 0; i < remainingLength; i++) {
-            shortCode.append(CHARSET.charAt(random.nextInt(CHARSET.length())));
-        }
-        
-        return shortCode.toString();
+    public Optional<ShortenerResponse> updateUrlByShortCode(String shortCode, String newUrl) {
+        return shortenedUrlRepository.findByShortCode(shortCode)
+            .map(url -> {
+                // Update the URL and timestamp
+                url.setUrl(newUrl);
+                url.setUpdatedAt(Instant.now());
+                
+                // Save the updated entity
+                ShortenedUrl updatedUrl = shortenedUrlRepository.save(url);
+                
+                logger.info("Updated URL for short code '{}'. New URL: '{}'", shortCode, newUrl);
+                
+                // Return response with updated data
+                return new ShortenerResponse(updatedUrl.getId(), updatedUrl.getUrl(), updatedUrl.getShortCode(), updatedUrl.getCreatedAt(), updatedUrl.getUpdatedAt(), updatedUrl.getAccessCount());
+            });
     }
 }

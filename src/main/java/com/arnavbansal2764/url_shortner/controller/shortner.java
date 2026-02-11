@@ -15,6 +15,8 @@ import com.arnavbansal2764.url_shortner.service.ShortenerService;
 import jakarta.validation.Valid;
 
 import java.util.Optional;
+import org.springframework.web.bind.annotation.PutMapping;
+
 
 
 /**
@@ -46,6 +48,24 @@ public class shortner {
     @GetMapping("/{shortCode}")
     public ResponseEntity<ShortenerResponse> getOriginal(@PathVariable String shortCode) {
         Optional<ShortenerResponse> response = shortenerService.getUrlByShortCode(shortCode);
+        return response
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Updates the URL for an existing shortened URL.
+     * The short code remains the same, but the original URL is updated.
+     * Returns 200 OK with the updated data on success, 404 if not found, or 400 if validation fails.
+     *
+     * @param shortCode the short code of the URL to update
+     * @param request the update request containing the new URL
+     * @return ResponseEntity with the updated ShortenerResponse, with 200 OK on success,
+     *         404 Not Found if the short code doesn't exist, or 400 Bad Request if validation fails
+     */
+    @PutMapping("/{shortCode}")
+    public ResponseEntity<ShortenerResponse> updateShortUrl(@PathVariable String shortCode, @Valid @RequestBody ShortenerRequest request) {
+        Optional<ShortenerResponse> response = shortenerService.updateUrlByShortCode(shortCode, request.getUrl());
         return response
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
