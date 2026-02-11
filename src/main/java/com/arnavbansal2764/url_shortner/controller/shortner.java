@@ -2,6 +2,7 @@ package com.arnavbansal2764.url_shortner.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.PutMapping;
  * Handles requests to shorten URLs and retrieve shortened URLs.
  */
 @RestController
-@RequestMapping("/shortner")
+@RequestMapping("/shorten")
 public class shortner {
     
     private final ShortenerService shortenerService;
@@ -71,4 +72,17 @@ public class shortner {
             .orElse(ResponseEntity.notFound().build());
     }
     
+    /**
+     * Deletes a shortened URL by its short code.
+     * Returns 204 No Content if the short URL was successfully deleted,
+     * or 404 Not Found if the short code doesn't exist.
+     *
+     * @param shortCode the short code of the URL to delete
+     * @return ResponseEntity with 204 No Content on success, 404 Not Found if not found
+     */
+    @DeleteMapping("/{shortCode}")
+    public ResponseEntity<Void> deleteShortUrl(@PathVariable String shortCode) {
+        boolean deleted = shortenerService.deleteUrlByShortCode(shortCode);
+        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
 }

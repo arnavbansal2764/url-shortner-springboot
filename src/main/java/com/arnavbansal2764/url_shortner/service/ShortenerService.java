@@ -110,4 +110,22 @@ public class ShortenerService {
                 return new ShortenerResponse(updatedUrl.getId(), updatedUrl.getUrl(), updatedUrl.getShortCode(), updatedUrl.getCreatedAt(), updatedUrl.getUpdatedAt(), updatedUrl.getAccessCount());
             });
     }
+    
+    /**
+     * Deletes a shortened URL by its short code.
+     * Removes the entry from the database.
+     * 
+     * @param shortCode the short code of the URL to delete
+     * @return true if the URL was found and deleted, false if not found
+     */
+    public boolean deleteUrlByShortCode(String shortCode) {
+        return shortenedUrlRepository.findByShortCode(shortCode)
+            .map(url -> {
+                // Delete the URL from the database
+                shortenedUrlRepository.delete(url);
+                logger.info("Deleted shortened URL with short code '{}' and ID '{}'.", shortCode, url.getId());
+                return true;
+            })
+            .orElse(false);
+    }
 }
