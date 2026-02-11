@@ -3,6 +3,7 @@ package com.arnavbansal2764.url_shortner.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,9 @@ import com.arnavbansal2764.url_shortner.dto.ShortenerRequest;
 import com.arnavbansal2764.url_shortner.dto.ShortenerResponse;
 import com.arnavbansal2764.url_shortner.service.ShortenerService;
 import jakarta.validation.Valid;
+
+import java.util.Optional;
+
 
 /**
  * REST Controller for URL shortener operations.
@@ -23,10 +27,6 @@ public class shortner {
     
     private final ShortenerService shortenerService;
     
-    /**
-     * Constructor injection of ShortenerService.
-     * Follows Spring Boot best practices for dependency injection.
-     */
     public shortner(ShortenerService shortenerService) {
         this.shortenerService = shortenerService;
     }
@@ -36,19 +36,19 @@ public class shortner {
         return "Welcome to shortner send a post request to shorten your url";
     }
     
-    /**
-     * Creates a shortened URL from the provided long URL.
-     * Returns 201 Created status on success with the short code and metadata.
-     * Returns 400 Bad Request if validation fails.
-     *
-     * @param request the ShortenerRequest containing the URL to shorten
-     * @return ResponseEntity with ShortenerResponse containing the short code and timestamps
-     */
     @PostMapping()
     public ResponseEntity<ShortenerResponse> postMethodName(@Valid @RequestBody ShortenerRequest request) {
         // URL has been validated by @Valid - starts with http or https
         ShortenerResponse response = shortenerService.shortenUrl(request.getUrl());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+    @GetMapping("/{shortCode}")
+    public ResponseEntity<ShortenerResponse> getOriginal(@PathVariable String shortCode) {
+        Optional<ShortenerResponse> response = shortenerService.getUrlByShortCode(shortCode);
+        return response
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
     
 }

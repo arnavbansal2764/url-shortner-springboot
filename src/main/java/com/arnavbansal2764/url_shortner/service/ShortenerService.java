@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -59,16 +60,40 @@ public class ShortenerService {
             Instant now = Instant.now();
             
             // Create and save the entity to the database
-            ShortenedUrl shortenedUrl = new ShortenedUrl(url, shortCode, now, now);
+            ShortenedUrl shortenedUrl = new ShortenedUrl(null, url, shortCode, now, now, 0L);
             ShortenedUrl savedUrl = shortenedUrlRepository.save(shortenedUrl);
             
             logger.info("Generated short code '{}' with ID '{}' for URL '{}'", shortCode, savedUrl.getId(), url);
             
-            return new ShortenerResponse(savedUrl.getId(), savedUrl.getUrl(), savedUrl.getShortCode(), savedUrl.getCreatedAt(), savedUrl.getUpdatedAt());
+            return new ShortenerResponse(savedUrl.getId(), savedUrl.getUrl(), savedUrl.getShortCode(), savedUrl.getCreatedAt(), savedUrl.getUpdatedAt(), savedUrl.getAccessCount());
         } catch (NoSuchAlgorithmException e) {
             logger.error("Error generating short code for URL: {}", url, e);
             throw new RuntimeException("Failed to generate short code", e);
         }
+    }
+    
+    /**
+     * Retrieves the original URL by its short code and increments its access count.
+     * Updates the access count in the database and returns the URL with the updated counter.
+     * 
+     * @param shortCode the short code to retrieve
+     * @return Optional containing the ShortenerResponse with updated access count if found, empty otherwise
+     */
+    public Optional<ShortenerResponse> getUrlByShortCode(String shortCode) {
+        return shortenedUrlRepository.findByShortCode(shortCode)
+            .map(url -> {
+                // Increment access count and update timestamp
+                url.setAccessCount(url.getAccessCount() + 1);
+                url.setUpdatedAt(Instant.now());
+                
+                // Save the updated entity
+                ShortenedUrl updatedUrl = shortenedUrlRepository.save(url);
+                
+                logger.info("URL retrieved with short code '{}'. Access count: {}", shortCode, updatedUrl.getAccessCount());
+                
+                // Return response with updated access count
+                return new ShortenerResponse(updatedUrl.getId(), updatedUrl.getUrl(), updatedUrl.getShortCode(), updatedUrl.getCreatedAt(), updatedUrl.getUpdatedAt(), updatedUrl.getAccessCount());
+            });
     }
     
     /**
