@@ -85,4 +85,21 @@ public class shortner {
         boolean deleted = shortenerService.deleteUrlByShortCode(shortCode);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
+
+    /**
+     * Retrieves statistics for a shortened URL by its short code.
+     * Returns the full URL details including access count without incrementing it.
+     * Returns 200 OK with the stats data if found, or 404 Not Found if not found.
+     *
+     * @param shortCode the short code of the URL to retrieve stats for
+     * @return ResponseEntity with the ShortenerResponse containing stats, 200 OK on success, 404 Not Found if not found
+     */
+    @GetMapping("/{shortCode}/stats")
+    public ResponseEntity<ShortenerResponse> getStats(@PathVariable String shortCode) {
+        Optional<ShortenerResponse> response = shortenerService.getStatsByShortCode(shortCode);
+        return response
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+    
 }

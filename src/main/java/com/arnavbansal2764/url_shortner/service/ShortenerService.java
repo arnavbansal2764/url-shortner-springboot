@@ -112,6 +112,24 @@ public class ShortenerService {
     }
     
     /**
+     * Retrieves statistics for a shortened URL by its short code without incrementing access count.
+     * Unlike getUrlByShortCode, this method does NOT increment the access counter.
+     * Used for retrieving stats about a URL without affecting its access count.
+     * 
+     * @param shortCode the short code to retrieve stats for
+     * @return Optional containing the ShortenerResponse if found, empty otherwise
+     */
+    public Optional<ShortenerResponse> getStatsByShortCode(String shortCode) {
+        return shortenedUrlRepository.findByShortCode(shortCode)
+            .map(url -> {
+                logger.info("Retrieved stats for short code '{}'. Current access count: {}", shortCode, url.getAccessCount());
+                
+                // Return response without modifying the entity
+                return new ShortenerResponse(url.getId(), url.getUrl(), url.getShortCode(), url.getCreatedAt(), url.getUpdatedAt(), url.getAccessCount());
+            });
+    }
+    
+    /**
      * Deletes a shortened URL by its short code.
      * Removes the entry from the database.
      * 
