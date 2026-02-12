@@ -2,6 +2,7 @@
 
 A Spring Boot-based URL shortening service with RESTful APIs, PostgreSQL persistence, and Docker support.
 
+Project Detail URL : https://roadmap.sh/projects/url-shortening-service
 ## Features
 
 - ✅ Shorten long URLs to compact short codes
